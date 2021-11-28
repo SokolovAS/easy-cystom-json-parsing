@@ -1,11 +1,11 @@
 package main
 
 type Service struct {
-	log Logger
+	log Log
 }
 
 type Base struct {
-	Things []interface{}
+	Things []interface{} `json:"things"`
 }
 
 type Person struct {
@@ -18,8 +18,8 @@ type Place struct {
 	Country string `json:"country"`
 }
 
-type HumanDecoder struct {
+type HumanDecode struct {
 	service *Service
 }
 
-type Logger struct{}
+type Log struct{}

@@ -7,56 +7,72 @@ import (
 	"sort"
 )
 
-type HumanDecoding interface {
+type HumanDecoder interface {
 	Decode(data []byte) ([]Person, []Place)
 }
 
-type Logging interface {
+type Logger interface {
 	Println(v ...interface{})
 	Fatalf(format string, v ...interface{})
 }
 
-func NewHumanDecoder(service *Service) *HumanDecoder {
-	return &HumanDecoder{service: service}
+func NewHumanDecoder(service *Service) *HumanDecode {
+	return &HumanDecode{service: service}
 }
 
-func NewService(log Logger) *Service {
+func NewService(log Log) *Service {
 	return &Service{log: log}
 }
 
-func (h *HumanDecoder) Decode(data []byte) ([]Person, []Place) {
-	var b Base
-	var persons []Person
-	var places []Place
+func (h *HumanDecode) Decode(data []byte) ([]Person, []Place) {
+	var (
+		b       Base
+		persons []Person
+		places  []Place
+	)
 
-	err := json.Unmarshal(data, &b)
-	if err != nil {
+	if err := json.Unmarshal(data, &b); err != nil {
 		log.Fatal(err)
 	}
 
 	for _, val := range b.Things {
 		data := val.(map[string]interface{})
 		if data["name"] != nil {
-			person := Person{data["name"].(string), data["age"].(float64)}
+			name, ok := data["name"].(string)
+			checkError("Error type assertion 'name'", ok)
+			age, ok := data["age"].(float64)
+			checkError("Error type assertion 'age'", ok)
+			person := Person{name, age}
 			persons = append(persons, person)
-		} else {
-			place := Place{data["city"].(string), data["country"].(string)}
-			places = append(places, place)
+			continue
 		}
+		city, ok := data["city"].(string)
+		checkError("Error type assertion 'city'", ok)
+		country, ok := data["country"].(string)
+		checkError("Error type assertion 'country'", ok)
+		place := Place{city, country}
+		places = append(places, place)
+
 	}
 	return persons, places
 }
 
-func (s *Logger) Println(v ...interface{}) {
+func checkError(s string, ok bool) {
+	if !ok {
+		log.Fatal("Error type assertion 'country'")
+	}
+}
+
+func (s *Log) Println(v ...interface{}) {
 	fmt.Println(v)
 }
 
-func (s *Logger) Fatalf(format string, v ...interface{}) {
+func (s *Log) Fatalf(format string, v ...interface{}) {
 	log.Fatalf(format, v)
 }
 
 func showResults(data []byte) {
-	logger := Logger{}
+	logger := Log{}
 	s := NewService(logger)
 	h := NewHumanDecoder(s)
 	persons, places := h.Decode(data)
